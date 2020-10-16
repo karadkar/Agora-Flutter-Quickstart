@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import './call.dart';
+import 'agora_configuration.dart';
 
 class IndexPage extends StatefulWidget {
   @override
@@ -13,7 +14,7 @@ class IndexPage extends StatefulWidget {
 
 class IndexState extends State<IndexPage> {
   /// create a channelController to retrieve text value
-  final _channelController = TextEditingController();
+  final _channelController = TextEditingController(text: "jombay");
 
   /// if channel textField is validated to have error
   bool _validateError = false;
@@ -120,8 +121,11 @@ class IndexState extends State<IndexPage> {
         context,
         MaterialPageRoute(
           builder: (context) => CallPage(
-            channelName: _channelController.text,
-            role: _role,
+            defaultConfig: AgoraConfiguration(
+              channelName: _channelController.text,
+              clientRole: _role,
+              channelProfile: ChannelProfile.LiveBroadcasting,
+            ),
           ),
         ),
       );

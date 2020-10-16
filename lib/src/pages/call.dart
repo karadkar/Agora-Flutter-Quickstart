@@ -6,16 +6,27 @@ import 'package:agora_rtc_engine/rtc_remote_view.dart' as RtcRemoteView;
 import 'package:flutter/material.dart';
 
 import '../utils/settings.dart';
+import 'agora_configuration.dart';
 
 class CallPage extends StatefulWidget {
-  /// non-modifiable channel name of the page
-  final String channelName;
+  String get channelName => activeConfig.channelName;
 
-  /// non-modifiable client role of the page
-  final ClientRole role;
+  ClientRole get role => activeConfig.clientRole;
+
+  ChannelProfile get channelProfile => activeConfig.channelProfile;
+
+  final AgoraConfiguration defaultConfig;
+  final AgoraConfiguration breakoutRoomConfig = AgoraConfiguration(
+    channelName: "break-out-room-B",
+    channelProfile: ChannelProfile.Communication,
+    clientRole: ClientRole.Broadcaster,
+  );
+  AgoraConfiguration activeConfig;
 
   /// Creates a call page with given channel name.
-  const CallPage({Key key, this.channelName, this.role}) : super(key: key);
+  CallPage({Key key, this.defaultConfig}) : super(key: key) {
+    this.activeConfig = defaultConfig;
+  }
 
   @override
   _CallPageState createState() => _CallPageState();
@@ -68,7 +79,7 @@ class _CallPageState extends State<CallPage> {
   Future<void> _initAgoraRtcEngine() async {
     _engine = await RtcEngine.create(APP_ID);
     await _engine.enableVideo();
-    await _engine.setChannelProfile(ChannelProfile.LiveBroadcasting);
+    await _engine.setChannelProfile(widget.channelProfile);
     await _engine.setClientRole(widget.role);
   }
 
@@ -303,6 +314,37 @@ class _CallPageState extends State<CallPage> {
           ],
         ),
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          _switchConfiguration();
+        },
+        label: Text("Switch"),
+        icon: Icon(Icons.switch_account),
+        backgroundColor: Colors.pink,
+      ),
     );
+  }
+
+  _switchConfiguration() async {
+    AgoraConfiguration config;
+
+    if (widget.activeConfig == widget.defaultConfig) {
+      config = widget.breakoutRoomConfig;
+    } else {
+      config = widget.defaultConfig;
+    }
+    setState(() {
+      // adds local feed
+      widget.activeConfig = config;
+    });
+
+    print(
+      "switching to: "
+      "channel:${config.channelName} role:${config.clientRole} profile:${config.channelProfile}",
+    );
+    await _engine.leaveChannel();
+    await _engine.joinChannel(null, config.channelName, null, 0);
+    await _engine.setChannelProfile(config.channelProfile);
+    await _engine.setClientRole(config.clientRole);
   }
 }
